@@ -52,12 +52,12 @@ func (b *Block) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct{
 		Timestamp		int64			`json:"timestamp"`
 		Nonce			int				`json:"nonce"`
-		PreviousHash	[32]byte		`json:"previous_hash"`
+		PreviousHash	string		`json:"previous_hash"`
 		Transactions	[]*Transaction	`json:"transactions"`
 	}{
 		Timestamp: b.timestamp,
 		Nonce: b.nonce,
-		PreviousHash: b.previousHash,
+		PreviousHash: fmt.Sprintf("%x", b.previousHash),
 		Transactions: b.transactions,
 	})
 }
@@ -66,14 +66,24 @@ type Blockchain struct {
 	transactionPool		[]*Transaction
 	chain				[]*Block
 	blockchainAddress	string
+	port				uint16
 }
 
-func NewBlockchain(blockchainAddress string) *Blockchain {
+func NewBlockchain(blockchainAddress string, port uint16) *Blockchain {
 	b := &Block{}
 	bc := new(Blockchain)
 	bc.blockchainAddress = blockchainAddress
 	bc.CreateBlock(0, b.Hash())
+	bc.port = port
 	return bc
+}
+
+func (bc *Blockchain) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct{
+		Blocks []*Block	`json:"chains"`
+	}{
+		Blocks: bc.chain,
+	})
 }
 
 func (bc *Blockchain) CreateBlock(nonce int, previousHash [32]byte) *Block {
