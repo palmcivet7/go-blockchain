@@ -214,3 +214,23 @@ func (t *Transaction) MarshalJSON() ([]byte, error) {
 		Value:		t.value,
 	})
 }
+
+type TransactionRequest struct {
+	SenderAddress	*string 	`json:"sender_address"`
+	ReceiverAddress *string 	`json:"receiver_address"`
+	SenderPublicKey	*string		`json:"sender_public_key"`
+	Value			*float64	`json:"value"`
+	Signature 		*string		`json:"signature`
+
+}
+
+func (tr *TransactionRequest) Validate () bool {
+	if tr.SenderAddress == nil ||
+		tr.ReceiverAddress == nil ||
+		tr.SenderPublicKey == nil ||
+		tr.Value == nil ||
+		tr.Signature == nil {
+		return false
+	}
+	return true
+}
