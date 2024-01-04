@@ -250,7 +250,7 @@ type TransactionRequest struct {
 	ReceiverAddress *string 	`json:"receiver_address"`
 	SenderPublicKey	*string		`json:"sender_public_key"`
 	Value			*float64	`json:"value"`
-	Signature 		*string		`json:"signature`
+	Signature 		*string		`json:"signature"`
 
 }
 
@@ -263,4 +263,16 @@ func (tr *TransactionRequest) Validate () bool {
 		return false
 	}
 	return true
+}
+
+type AmountResponse struct {
+	Amount	float64	`json:"amount"`
+}
+
+func (ar *AmountResponse) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Amount	float64	`json:"amount"`
+	}{
+		Amount: ar.Amount,
+	})
 }
