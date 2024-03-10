@@ -1,11 +1,13 @@
 package block
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -117,6 +119,10 @@ func (bc *Blockchain) TransactionPool() []*Transaction {
 	return bc.transactionPool
 }
 
+func (bc *Blockchain)  ClearTransactionPool() {
+	bc.transactionPool = bc.transactionPool[:0]
+}
+
 func (bc *Blockchain) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct{
 		Blocks []*Block	`json:"chains"`
@@ -129,6 +135,13 @@ func (bc *Blockchain) CreateBlock(nonce int, previousHash [32]byte) *Block {
 	b := NewBlock(nonce, previousHash, bc.transactionPool)
 	bc.chain = append(bc.chain, b)
 	bc.transactionPool = []*Transaction{}
+	for _, n := range bc.neighbours {
+		endpoint := fmt.Sprintf("http://%s/transactions", n)
+			client := &http.Client{}
+			req, _ := http.NewRequest("DELETE", endpoint, nil)
+			resp, _ :=  client.Do(req)
+			log.Printf("%v", resp)
+	}
 	return b
 }
 
@@ -155,8 +168,20 @@ func (bc *Blockchain) CreateTransaction(
 ) bool {
 	isTransacted := bc.AddTransaction(sender, receiver, value, senderPublicKey, s)
 
-	// TODO
-	// SYNC
+	if isTransacted {
+		for _, n := range bc.neighbours {
+			publicKeyStr := fmt.Sprintf("%064x%064x", senderPublicKey.X.Bytes(), senderPublicKey.Y.Bytes())
+			signatureStr := s.String()
+			bt := &TransactionRequest{&sender, &receiver, &publicKeyStr, &value, &signatureStr}
+			m, _ := json.Marshal(bt)
+			buf := bytes.NewBuffer(m)
+			endpoint := fmt.Sprintf("http://%s/transactions", n)
+			client := &http.Client{}
+			req, _ := http.NewRequest("PUT", endpoint, buf)
+			resp, _ :=  client.Do(req)
+			log.Printf("%v", resp)
+		}
+	}
 
 	return isTransacted
 }
